@@ -8,7 +8,8 @@
     "contracts": "contracts"
   },
   "scripts": {
-    "test": "waffle && mocha"
+    "test": "waffle && mocha",
+    "lint:fix": "eslint --fix --ext js test"
   },
   "author": {
     "name": "Crypteconomics Lab",
@@ -19,8 +20,12 @@
     "@openzeppelin/contracts": "^2.3.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-prettier": "^3.1.1",
     "ethereum-waffle": "^2.1.0",
     "ethers": "^4.0.33",
-    "mocha": "^6.2.0"
+    "mocha": "^6.2.0",
+    "prettier": "^1.19.1"
   }
 }
