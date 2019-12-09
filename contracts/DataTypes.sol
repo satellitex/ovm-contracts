@@ -21,6 +21,11 @@ library DataTypes {
         uint createdBlock;
     }
 
+    struct Challenge {
+        bytes challengeInput;
+        Property challengeProperty;
+    }
+
     struct Range {
         uint256 start;
         uint256 end;

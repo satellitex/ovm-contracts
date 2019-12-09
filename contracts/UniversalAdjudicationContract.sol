@@ -111,16 +111,61 @@ contract UniversalAdjudicationContract {
      */
     function challenge(
         bytes32 _gameId,
-        bytes[] memory _challengeInputs,
+        types.Challenge[] memory _challenges,
         bytes32 _challengingGameId
     ) public returns (bool) {
         types.ChallengeGame storage game = instantiatedGames[_gameId];
-        types.ChallengeGame memory challengingGame = instantiatedGames[_challengingGameId];
-        require(
-            LogicalConnective(game.property.predicateAddress).isValidChallenge(game.property.inputs, _challengeInputs[0], challengingGame.property),
-            "_challenge isn't valid"
-        );
+        require(_challenges.length % 2 == 1, "a number of challenges must be odd");
+        require(verifyChildOfGameTree(_gameId, _challenges, _challengingGameId, 1), "_challengingGameId must be valid child of game tree");
         game.challenges.push(_challengingGameId);
+        return true;
+    }
+
+    function makeTrueDecisionFromTrueGame(
+        bytes32 _gameId,
+        types.Challenge[] memory _challenges,
+        bytes32 _conditionGameId
+    ) public {
+        types.ChallengeGame storage game = instantiatedGames[_gameId];
+        types.ChallengeGame memory conditionGame = instantiatedGames[_conditionGameId];
+        require(_challenges.length % 2 == 0, "a number of challenges must be even");
+        require(verifyChildOfGameTree(_gameId, _challenges, _conditionGameId, 0), "_conditionGameId must be valid child of game tree");
+        require(conditionGame.decision == types.Decision.True, "condition property must be true");
+        game.decision = types.Decision.True;
+    }
+
+    function verifyChildOfGameTree(
+        bytes32 gameId,
+        types.Challenge[] memory challenges,
+        bytes32 challengingGameId,
+        uint256 isChallenge
+    ) private returns (bool) {
+        require(
+            gameId == utils.getPropertyId(challenges[0].challengeProperty),
+            "The first item of challenges must be gameId"
+        );
+        require(
+            challengingGameId == utils.getPropertyId(challenges[challenges.length - 1].challengeProperty),
+            "The last item of challenges must be challengingGameId"
+        );
+        // check left challenges
+        for(uint i = 0;i < challenges.length - 1;i++) {
+            // Counter parties' turn can be skipped if challenge.challengeInput is empty.
+            if(i % 2 == 0) {
+                require(
+                    keccak256(challenges[i + isChallenge].challengeInput) == keccak256(abi.encodePacked(byte(0))),
+                    "challengeInput must be empty"
+                );
+            }
+            require(
+                LogicalConnective(challenges[i].challengeProperty.predicateAddress).isValidChallenge(
+                    challenges[i].challengeProperty.inputs,
+                    challenges[i + 1].challengeInput,
+                    challenges[i + 1].challengeProperty
+                ),
+                "_challenge[i] isn't valid"
+            );
+        }
         return true;
     }
 
