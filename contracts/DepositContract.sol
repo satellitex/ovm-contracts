@@ -145,7 +145,7 @@ contract DepositContract {
      * @param _depositedRangeId Id of deposited range
      * @dev spec is https://docs.plasma.group/projects/spec/en/latest/src/02-contracts/deposit-contract.html#finalizeexit
      */
-    function finalizeExit(types.Property memory _exitProperty, uint256 _depositedRangeId) public {
+    function finalizeExit(types.Property memory _exitProperty, uint256 _depositedRangeId) public returns (types.Exit memory) {
         types.Exit memory exit = deserializeExit(_exitProperty);
         bytes32 exitId = getExitId(exit);
         // Check that we are authorized to finalize this exit
@@ -158,6 +158,7 @@ contract DepositContract {
         uint256 amount = exit.subrange.end - exit.subrange.start;
         erc20.transfer(exit.stateUpdate.stateObject.predicateAddress, amount);
         emit ExitFinalized(exitId);
+        return exit;
     }
 
     /* Helpers */

@@ -5,6 +5,7 @@ import {DataTypes as types} from "../../DataTypes.sol";
 import "../AtomicPredicate.sol";
 import {UniversalAdjudicationContract} from "../../UniversalAdjudicationContract.sol";
 import "../../Utils.sol";
+import "../Atomic/IsContainedPredicate.sol";
 
 /**
  * StateUpdatePredicate stands for the claim below.
@@ -23,7 +24,7 @@ contract StateUpdatePredicate {
     address equalAddress;
     address forAllSuchThatAddress;
     Utils utils;
-//    IsContainedPredicate isContainedPredicate;
+    address isContainedPredicateAddress;
     bytes StateUpdateT = bytes("StateUpdateT");
     bytes StateUpdateTA = bytes("StateUpdateTA");
 
@@ -40,7 +41,7 @@ contract StateUpdatePredicate {
         equalAddress = _equalAddress;
         forAllSuchThatAddress = _forAllSuchThatAddress;
         txAddress = _txAddress;
-//        isContainedPredicate = IsContainedPredicate(_isContainedPredicateAddress);
+        isContainedPredicateAddress = _isContainedPredicateAddress;
     }
 
     /**
@@ -116,7 +117,7 @@ contract StateUpdatePredicate {
             childInputs[0] = transaction.inputs[1];
             childInputs[1] = _inputs[3];
             notInputs[0] = abi.encode(types.Property({
-                predicateAddress: equalAddress,
+                predicateAddress: isContainedPredicateAddress,
                 inputs: childInputs
             }));
         } else if(challengeInput == 2) {
