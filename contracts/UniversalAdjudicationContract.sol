@@ -116,7 +116,7 @@ contract UniversalAdjudicationContract {
     ) public returns (bool) {
         types.ChallengeGame storage game = instantiatedGames[_gameId];
         require(_challenges.length % 2 == 1, "a number of challenges must be odd");
-        require(verifyChildOfGameTree(_gameId, _challenges, _challengingGameId, 1), "_challengingGameId must be valid child of game tree");
+        require(verifyChildOfGameTree(game.property, _challenges, _challengingGameId, 1), "_challengingGameId must be valid child of game tree");
         game.challenges.push(_challengingGameId);
         return true;
     }
@@ -129,20 +129,24 @@ contract UniversalAdjudicationContract {
         types.ChallengeGame storage game = instantiatedGames[_gameId];
         types.ChallengeGame memory conditionGame = instantiatedGames[_conditionGameId];
         require(_challenges.length % 2 == 0, "a number of challenges must be even");
-        require(verifyChildOfGameTree(_gameId, _challenges, _conditionGameId, 0), "_conditionGameId must be valid child of game tree");
+        require(verifyChildOfGameTree(game.property, _challenges, _conditionGameId, 0), "_conditionGameId must be valid child of game tree");
         require(conditionGame.decision == types.Decision.True, "condition property must be true");
         game.decision = types.Decision.True;
     }
 
     function verifyChildOfGameTree(
-        bytes32 gameId,
+        types.Property memory firstProperty,
         types.Challenge[] memory challenges,
         bytes32 challengingGameId,
         uint256 isChallenge
-    ) private returns (bool) {
+    ) private view returns (bool) {
         require(
-            gameId == utils.getPropertyId(challenges[0].challengeProperty),
-            "The first item of challenges must be gameId"
+            LogicalConnective(firstProperty.predicateAddress).isValidChallenge(
+                firstProperty.inputs,
+                challenges[0].challengeInput,
+                challenges[0].challengeProperty
+            ),
+            "The first item of challenges must be valid challenge of gameId"
         );
         require(
             challengingGameId == utils.getPropertyId(challenges[challenges.length - 1].challengeProperty),

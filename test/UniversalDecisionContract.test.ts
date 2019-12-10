@@ -40,7 +40,8 @@ describe('UniversalAdjudicationContract', () => {
     adjudicationContract = await deployContract(
       wallet,
       UniversalAdjudicationContract,
-      [utils.address]
+      [utils.address],
+      { gasPrice: 8000000000, gasLimit: 4700000 }
     )
     notPredicate = await deployContract(wallet, NotPredicate, [
       adjudicationContract.address,
@@ -101,7 +102,11 @@ describe('UniversalAdjudicationContract', () => {
       await adjudicationContract.claimProperty(trueProperty)
       const gameId = getGameIdFromProperty(notProperty)
       const challengingGameId = getGameIdFromProperty(trueProperty)
-      await adjudicationContract.challenge(gameId, ['0x'], challengingGameId)
+      await adjudicationContract.challenge(
+        gameId,
+        [['0x', trueProperty]],
+        challengingGameId
+      )
       const game = await adjudicationContract.getGame(gameId)
 
       assert.equal(game.challenges.length, 1)
@@ -112,7 +117,11 @@ describe('UniversalAdjudicationContract', () => {
       const gameId = getGameIdFromProperty(notProperty)
       const challengingGameId = getGameIdFromProperty(notFalseProperty)
       await expect(
-        adjudicationContract.challenge(gameId, ['0x'], challengingGameId)
+        adjudicationContract.challenge(
+          gameId,
+          [['0x', notFalseProperty]],
+          challengingGameId
+        )
       ).to.be.reverted
     })
   })
@@ -123,7 +132,11 @@ describe('UniversalAdjudicationContract', () => {
       await adjudicationContract.claimProperty(trueProperty)
       const gameId = getGameIdFromProperty(notProperty)
       const challengingGameId = getGameIdFromProperty(trueProperty)
-      await adjudicationContract.challenge(gameId, ['0x'], challengingGameId)
+      await adjudicationContract.challenge(
+        gameId,
+        [['0x', trueProperty]],
+        challengingGameId
+      )
       await testPredicate.decideTrue(['0x01'])
       await adjudicationContract.decideClaimToFalse(gameId, challengingGameId)
       const game = await adjudicationContract.getGame(gameId)
@@ -135,7 +148,11 @@ describe('UniversalAdjudicationContract', () => {
       await adjudicationContract.claimProperty(falseProperty)
       const gameId = getGameIdFromProperty(notFalseProperty)
       const challengingGameId = getGameIdFromProperty(falseProperty)
-      await adjudicationContract.challenge(gameId, ['0x'], challengingGameId)
+      await adjudicationContract.challenge(
+        gameId,
+        [['0x', falseProperty]],
+        challengingGameId
+      )
       await expect(
         adjudicationContract.decideClaimToFalse(gameId, challengingGameId)
       ).to.be.reverted
@@ -192,7 +209,11 @@ describe('UniversalAdjudicationContract', () => {
       await adjudicationContract.claimProperty(falseProperty)
       const gameId = getGameIdFromProperty(notFalseProperty)
       const challengeGameId = getGameIdFromProperty(falseProperty)
-      await adjudicationContract.challenge(gameId, ['0x'], challengeGameId)
+      await adjudicationContract.challenge(
+        gameId,
+        [['0x', falseProperty]],
+        challengeGameId
+      )
       await testPredicate.decideFalse(falseProperty.inputs)
       await adjudicationContract.removeChallenge(gameId, challengeGameId)
       const game = await adjudicationContract.getGame(gameId)
@@ -203,7 +224,11 @@ describe('UniversalAdjudicationContract', () => {
       await adjudicationContract.claimProperty(falseProperty)
       const gameId = getGameIdFromProperty(notFalseProperty)
       const challengeGameId = getGameIdFromProperty(falseProperty)
-      await adjudicationContract.challenge(gameId, ['0x'], challengeGameId)
+      await adjudicationContract.challenge(
+        gameId,
+        [['0x', falseProperty]],
+        challengeGameId
+      )
       await expect(
         adjudicationContract.removeChallenge(gameId, challengeGameId)
       ).to.be.reverted
@@ -213,7 +238,11 @@ describe('UniversalAdjudicationContract', () => {
       await adjudicationContract.claimProperty(trueProperty)
       const gameId = getGameIdFromProperty(notProperty)
       const challengeGameId = getGameIdFromProperty(trueProperty)
-      await adjudicationContract.challenge(gameId, ['0x'], challengeGameId)
+      await adjudicationContract.challenge(
+        gameId,
+        [['0x', trueProperty]],
+        challengeGameId
+      )
       await testPredicate.decideTrue(trueProperty.inputs)
       await expect(
         adjudicationContract.removeChallenge(gameId, challengeGameId)
