@@ -114,5 +114,10 @@ describe('AndPredicate', () => {
         )
       ).to.be.reverted
     })
+    it('throw exception with empty challengeInput', async () => {
+      await expect(
+        mockChallenge.isValidChallenge(andProperty, '0x', notFalseProperty)
+      ).to.be.reverted
+    })
   })
 })

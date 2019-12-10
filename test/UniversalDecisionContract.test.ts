@@ -30,10 +30,33 @@ describe('UniversalAdjudicationContract', () => {
   let trueProperty: OvmProperty,
     falseProperty: OvmProperty,
     notProperty: OvmProperty,
+    notNotTrueProperty: OvmProperty,
+    notNotNotTrueProperty: OvmProperty,
+    notNotNotNotTrueProperty: OvmProperty,
     notFalseProperty: OvmProperty
   const Undecided = 0
   const True = 1
   const False = 2
+
+  function encodeProperty(property: OvmProperty) {
+    return abi.encode(
+      ['tuple(address, bytes[])'],
+      [[property.predicateAddress, property.inputs]]
+    )
+  }
+
+  function createNotProperty(n: number, isTrue: boolean): OvmProperty {
+    if (n == 0) {
+      return {
+        predicateAddress: testPredicate.address,
+        inputs: isTrue ? ['0x01'] : []
+      }
+    }
+    return {
+      predicateAddress: notPredicate.address,
+      inputs: [encodeProperty(createNotProperty(n - 1, isTrue))]
+    }
+  }
 
   beforeEach(async () => {
     utils = await deployContract(wallet, Utils, [])
@@ -59,21 +82,11 @@ describe('UniversalAdjudicationContract', () => {
       predicateAddress: testPredicate.address,
       inputs: []
     }
-    notProperty = {
-      predicateAddress: notPredicate.address,
-      inputs: [
-        abi.encode(
-          ['tuple(address, bytes[])'],
-          [[testPredicate.address, ['0x01']]]
-        )
-      ]
-    }
-    notFalseProperty = {
-      predicateAddress: notPredicate.address,
-      inputs: [
-        abi.encode(['tuple(address, bytes[])'], [[testPredicate.address, []]])
-      ]
-    }
+    notProperty = createNotProperty(1, true)
+    notNotTrueProperty = createNotProperty(2, true)
+    notNotNotTrueProperty = createNotProperty(3, true)
+    notNotNotNotTrueProperty = createNotProperty(4, true)
+    notFalseProperty = createNotProperty(1, false)
   })
 
   describe('claimProperty', () => {
@@ -123,6 +136,102 @@ describe('UniversalAdjudicationContract', () => {
           challengingGameId
         )
       ).to.be.reverted
+    })
+  })
+
+  describe('makeTrueDecisionFromTrueGame', () => {
+    it('not(not(true)) is true', async () => {
+      await adjudicationContract.claimProperty(notNotTrueProperty)
+      await adjudicationContract.claimProperty(trueProperty)
+      await testPredicate.decideTrue(trueProperty.inputs)
+      const gameId = getGameIdFromProperty(notNotTrueProperty)
+      const challengingGameId = getGameIdFromProperty(trueProperty)
+      await adjudicationContract.makeTrueDecisionFromTrueGame(
+        gameId,
+        [
+          ['0x', notProperty],
+          ['0x', trueProperty]
+        ],
+        challengingGameId
+      )
+      const game = await adjudicationContract.getGame(gameId)
+
+      assert.equal(game.decision, true)
+    })
+
+    it('throw exception because not(not(false)) is false', async () => {
+      const notNotFalseProperty = createNotProperty(2, false)
+      await adjudicationContract.claimProperty(notNotFalseProperty)
+      await adjudicationContract.claimProperty(falseProperty)
+      const gameId = getGameIdFromProperty(notNotFalseProperty)
+      const challengingGameId = getGameIdFromProperty(falseProperty)
+      await expect(
+        adjudicationContract.makeTrueDecisionFromTrueGame(
+          gameId,
+          [
+            ['0x', notFalseProperty],
+            ['0x', falseProperty]
+          ],
+          challengingGameId
+        )
+      ).to.be.revertedWith('condition property must be true')
+    })
+
+    it('throw exception with not empty challengeInput', async () => {
+      await adjudicationContract.claimProperty(notNotNotNotTrueProperty)
+      await adjudicationContract.claimProperty(trueProperty)
+      await testPredicate.decideTrue(trueProperty.inputs)
+      const gameId = getGameIdFromProperty(notNotNotNotTrueProperty)
+      const challengingGameId = getGameIdFromProperty(trueProperty)
+      await expect(
+        adjudicationContract.makeTrueDecisionFromTrueGame(
+          gameId,
+          [
+            ['0x', notNotNotTrueProperty],
+            ['0x0', notNotTrueProperty],
+            ['0x1', notProperty],
+            ['0x0', trueProperty]
+          ],
+          challengingGameId
+        )
+      ).to.be.revertedWith('challengeInput must be empty')
+    })
+
+    it('throw exception with odd number of challeges', async () => {
+      await adjudicationContract.claimProperty(notNotTrueProperty)
+      await adjudicationContract.claimProperty(trueProperty)
+      const gameId = getGameIdFromProperty(notNotTrueProperty)
+      const challengingGameId = getGameIdFromProperty(trueProperty)
+      await expect(
+        adjudicationContract.makeTrueDecisionFromTrueGame(
+          gameId,
+          [
+            ['0x', notProperty],
+            ['0x', trueProperty],
+            ['0x', trueProperty]
+          ],
+          challengingGameId
+        )
+      ).to.be.revertedWith('the number of challenges must be even')
+    })
+
+    it('throw exception with invalid first challenge', async () => {
+      await adjudicationContract.claimProperty(notNotTrueProperty)
+      await adjudicationContract.claimProperty(trueProperty)
+      const gameId = getGameIdFromProperty(notNotTrueProperty)
+      const challengingGameId = getGameIdFromProperty(trueProperty)
+      await expect(
+        adjudicationContract.makeTrueDecisionFromTrueGame(
+          gameId,
+          [
+            ['0x', trueProperty],
+            ['0x', trueProperty]
+          ],
+          challengingGameId
+        )
+      ).to.be.revertedWith(
+        'The first item of challenges must be valid challenge of gameId'
+      )
     })
   })
 

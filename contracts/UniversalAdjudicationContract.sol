@@ -128,7 +128,7 @@ contract UniversalAdjudicationContract {
     ) public {
         types.ChallengeGame storage game = instantiatedGames[_gameId];
         types.ChallengeGame memory conditionGame = instantiatedGames[_conditionGameId];
-        require(_challenges.length % 2 == 0, "a number of challenges must be even");
+        require(_challenges.length % 2 == 0, "the number of challenges must be even");
         require(verifyChildOfGameTree(game.property, _challenges, _conditionGameId, 0), "_conditionGameId must be valid child of game tree");
         require(conditionGame.decision == types.Decision.True, "condition property must be true");
         game.decision = types.Decision.True;
@@ -157,7 +157,7 @@ contract UniversalAdjudicationContract {
             // Counter parties' turn can be skipped if challenge.challengeInput is empty.
             if(i % 2 == 0) {
                 require(
-                    keccak256(challenges[i + isChallenge].challengeInput) == keccak256(abi.encodePacked(byte(0))),
+                    keccak256(challenges[i + isChallenge].challengeInput) == keccak256(bytes("")),
                     "challengeInput must be empty"
                 );
             }
