@@ -5,9 +5,11 @@ import {
   getWallets,
   solidity
 } from 'ethereum-waffle'
+import * as MockAdjudicationContract from '../../../build/MockAdjudicationContract.json'
 import * as MockChallenge from '../../../build/MockChallenge.json'
 import * as Utils from '../../../build/Utils.json'
 import * as StateUpdatePredicate from '../../../build/StateUpdatePredicate.json'
+import * as IsContainedPredicate from '../../../build/IsContainedPredicate.json'
 import * as ethers from 'ethers'
 import {
   encodeProperty,
@@ -26,38 +28,53 @@ describe('StateUpdatePredicate', () => {
   let wallet = wallets[0]
   let stateUpdatePredicate: ethers.Contract
   let mockChallenge: ethers.Contract
+  let isContainedPredicate: ethers.Contract
   const notAddress = randomAddress()
   const equalAddress = randomAddress()
   const forAllSuchThatAddress = randomAddress()
   const txAddress = randomAddress()
   const ownershipAddress = randomAddress()
-  const isContainedPredicateAddress = randomAddress()
+  const token = randomAddress()
+  const range = abi.encode(['tuple(uint256, uint256)'], [[100, 200]])
+  const blockNumber = '0x00001200'
+  const stateObject = encodeProperty({
+    predicateAddress: ownershipAddress,
+    inputs: [wallet.address]
+  })
+  const transaction = encodeProperty({
+    predicateAddress: txAddress,
+    inputs: [token, range, blockNumber, stateObject]
+  })
 
   beforeEach(async () => {
     const utils = await deployContract(wallet, Utils, [])
     mockChallenge = await deployContract(wallet, MockChallenge, [])
-    stateUpdatePredicate = await deployContract(wallet, StateUpdatePredicate, [
-      utils.address,
-      notAddress,
-      equalAddress,
-      forAllSuchThatAddress,
-      txAddress,
-      isContainedPredicateAddress
+    const adjudicationContract = await deployContract(
+      wallet,
+      MockAdjudicationContract,
+      [false]
+    )
+    isContainedPredicate = await deployContract(wallet, IsContainedPredicate, [
+      adjudicationContract.address,
+      utils.address
     ])
+    stateUpdatePredicate = await deployContract(
+      wallet,
+      StateUpdatePredicate,
+      [
+        utils.address,
+        adjudicationContract.address,
+        notAddress,
+        equalAddress,
+        forAllSuchThatAddress,
+        txAddress,
+        isContainedPredicate.address
+      ],
+      { gasPrice: 8000000000, gasLimit: 4700000 }
+    )
   })
 
   describe('isValidChallenge', () => {
-    const token = randomAddress()
-    const range = abi.encode(['tuple(uint256, uint256)'], [[100, 200]])
-    const blockNumber = '0x00001200'
-    const stateObject = encodeProperty({
-      predicateAddress: ownershipAddress,
-      inputs: [wallet.address]
-    })
-    const transaction = encodeProperty({
-      predicateAddress: txAddress,
-      inputs: [token, range, blockNumber, stateObject]
-    })
     it('return true with StateUpdateT', async () => {
       const stateUpdateProperty = {
         predicateAddress: stateUpdatePredicate.address,
@@ -179,6 +196,59 @@ describe('StateUpdatePredicate', () => {
           equalProperty
         )
       ).to.be.revertedWith('_challenge must be valud child of game tree')
+    })
+  })
+
+  describe('decideTrue', () => {
+    it('suceed to decide', async () => {
+      const stateUpdateProperty = {
+        predicateAddress: stateUpdatePredicate.address,
+        inputs: [
+          encodeString('StateUpdateTA'),
+          transaction,
+          token,
+          range,
+          blockNumber,
+          stateObject
+        ]
+      }
+      await stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs)
+    })
+
+    it('fail to decide with invalid label', async () => {
+      const invalidRange = abi.encode(['tuple(uint256, uint256)'], [[150, 250]])
+      const stateUpdateProperty = {
+        predicateAddress: stateUpdatePredicate.address,
+        inputs: [
+          encodeString('StateUpdateT'),
+          transaction,
+          token,
+          invalidRange,
+          blockNumber,
+          stateObject
+        ]
+      }
+      await expect(
+        stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs)
+      ).to.be.revertedWith('unknown label')
+    })
+
+    it('fail to decide with invalid range', async () => {
+      const invalidRange = abi.encode(['tuple(uint256, uint256)'], [[150, 250]])
+      const stateUpdateProperty = {
+        predicateAddress: stateUpdatePredicate.address,
+        inputs: [
+          encodeString('StateUpdateTA'),
+          transaction,
+          token,
+          invalidRange,
+          blockNumber,
+          stateObject
+        ]
+      }
+      await expect(
+        stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs)
+      ).to.be.revertedWith('range must contain subrange')
     })
   })
 })

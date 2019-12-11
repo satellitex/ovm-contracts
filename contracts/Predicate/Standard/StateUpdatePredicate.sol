@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import {DataTypes as types} from "../../DataTypes.sol";
 import "../AtomicPredicate.sol";
-import {UniversalAdjudicationContract} from "../../UniversalAdjudicationContract.sol";
+import { UniversalAdjudicationContract } from "../../UniversalAdjudicationContract.sol";
 import "../../Utils.sol";
 import "../Atomic/IsContainedPredicate.sol";
 
@@ -27,9 +27,11 @@ contract StateUpdatePredicate {
     address isContainedPredicateAddress;
     bytes StateUpdateT = bytes("StateUpdateT");
     bytes StateUpdateTA = bytes("StateUpdateTA");
+    UniversalAdjudicationContract adjudicationContract;
 
     constructor(
         address _utilsAddress,
+        address _adjudicationContractAddress,
         address _notAddress,
         address _equalAddress,
         address _forAllSuchThatAddress,
@@ -37,6 +39,7 @@ contract StateUpdatePredicate {
         address _isContainedPredicateAddress
     ) public {
         utils = Utils(_utilsAddress);
+        adjudicationContract = UniversalAdjudicationContract(_adjudicationContractAddress);
         notAddress = _notAddress;
         equalAddress = _equalAddress;
         forAllSuchThatAddress = _forAllSuchThatAddress;
@@ -149,4 +152,43 @@ contract StateUpdatePredicate {
             inputs: notInputs
         });
     }
+
+    function decideStateUpdateTA(bytes[] memory _inputs) public view returns (bool) {
+        types.Property memory transaction = abi.decode(_inputs[0], (types.Property));
+        types.Property memory stateObject = abi.decode(_inputs[4], (types.Property));
+        bytes[] memory inputsForIsContained = new bytes[](2);
+        inputsForIsContained[0] = transaction.inputs[1];
+        inputsForIsContained[1] = _inputs[2];
+        bytes[] memory stateObjectInputs = new bytes[](stateObject.inputs.length + 1);
+        for(uint256 i = 0;i < stateObject.inputs.length;i++) {
+            stateObjectInputs[i] = stateObject.inputs[i];
+        }
+        stateObjectInputs[stateObject.inputs.length] = _inputs[0];
+        require(transaction.predicateAddress == txAddress, "transaction.predicateAddress must be Tx.address");
+        require(keccak256(transaction.inputs[0]) == keccak256(_inputs[1]), "token must be same");
+        require(IsContainedPredicate(isContainedPredicateAddress).decide(inputsForIsContained), "range must be included");
+        require(keccak256(transaction.inputs[2]) == keccak256(_inputs[3]), "input block number must be same");
+        require(
+            adjudicationContract.isDecided(types.Property({
+                predicateAddress: stateObject.predicateAddress,
+                inputs: stateObjectInputs
+            })),
+            "state object must be decided"
+        );
+        return true;
+    }
+
+    function decideTrue(bytes[] memory _inputs) public {
+        if(keccak256(_inputs[0]) == keccak256((StateUpdateTA))) {
+            require(decideStateUpdateTA(utils.subArray(_inputs, 1, _inputs.length)), "must decide true");
+        } else {
+            require(false, "unknown label");
+        }
+        types.Property memory property = types.Property({
+            predicateAddress: address(this),
+            inputs: _inputs
+        });
+        adjudicationContract.setPredicateDecision(utils.getPropertyId(property), true);
+    }
+
 }
