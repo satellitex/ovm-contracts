@@ -60,9 +60,10 @@ contract StateUpdatePredicate {
     }
 
     function getChild(bytes[] memory inputs, bytes memory challengeInput) private returns (types.Property memory) {
-        if(keccak256(inputs[0]) == keccak256((StateUpdateT))) {
-            return getChildStateUpdateT(inputs, challengeInput);
+        if(keccak256(inputs[0]) == keccak256((StateUpdateTA))) {
+            return getChildStateUpdateTA(utils.subArray(inputs, 1, inputs.length), challengeInput);
         }
+        return getChildStateUpdateT(inputs, challengeInput);
     }
 
    /**
@@ -72,10 +73,10 @@ contract StateUpdatePredicate {
         bytes[] memory childInputs = new bytes[](6);
         childInputs[0] = StateUpdateTA;
         childInputs[1] = bytes("__VARIABLE__tx");
-        childInputs[2] = _inputs[1];
-        childInputs[3] = _inputs[2];
-        childInputs[4] = _inputs[3];
-        childInputs[5] = _inputs[4];
+        childInputs[2] = _inputs[0];
+        childInputs[3] = _inputs[1];
+        childInputs[4] = _inputs[2];
+        childInputs[5] = _inputs[3];
         bytes[] memory notInputs = new bytes[](1);
         notInputs[0] = abi.encode(types.Property({
             predicateAddress: address(this),
@@ -83,9 +84,10 @@ contract StateUpdatePredicate {
             // _inputs[4] is StateObject
             inputs: childInputs
         }));
-        bytes[] memory forAllSuchThatInputs = new bytes[](2);
-        forAllSuchThatInputs[0] = bytes("tx");
-        forAllSuchThatInputs[1] = abi.encode(types.Property({
+        bytes[] memory forAllSuchThatInputs = new bytes[](3);
+        forAllSuchThatInputs[0] = bytes("");
+        forAllSuchThatInputs[1] = bytes("tx");
+        forAllSuchThatInputs[2] = abi.encode(types.Property({
             predicateAddress: notAddress,
             inputs: notInputs
         }));
@@ -99,14 +101,14 @@ contract StateUpdatePredicate {
      * Gets child of StateUpdateTA(StateUpdateTA, tx, token, range, block_number, so).
      */
     function getChildStateUpdateTA(bytes[] memory _inputs, bytes memory _challengeInput) private returns (types.Property memory) {
-        types.Property memory transaction = abi.decode(_inputs[1], (types.Property));
+        types.Property memory transaction = abi.decode(_inputs[0], (types.Property));
         uint256 challengeInput = abi.decode(_challengeInput, (uint256));
         bytes[] memory notInputs = new bytes[](1);
         if(challengeInput == 0) {
             // tx.token == token
             bytes[] memory childInputs = new bytes[](2);
             childInputs[0] = transaction.inputs[0];
-            childInputs[1] = _inputs[2];
+            childInputs[1] = _inputs[1];
             notInputs[0] = abi.encode(types.Property({
                 predicateAddress: equalAddress,
                 inputs: childInputs
@@ -115,7 +117,7 @@ contract StateUpdatePredicate {
             // tx.range within range
             bytes[] memory childInputs = new bytes[](2);
             childInputs[0] = transaction.inputs[1];
-            childInputs[1] = _inputs[3];
+            childInputs[1] = _inputs[2];
             notInputs[0] = abi.encode(types.Property({
                 predicateAddress: isContainedPredicateAddress,
                 inputs: childInputs
@@ -124,19 +126,19 @@ contract StateUpdatePredicate {
             // tx.block_number is block_number
             bytes[] memory childInputs = new bytes[](2);
             childInputs[0] = transaction.inputs[2];
-            childInputs[1] = _inputs[4];
+            childInputs[1] = _inputs[3];
             notInputs[0] = abi.encode(types.Property({
                 predicateAddress: equalAddress,
                 inputs: childInputs
             }));
         } else if(challengeInput == 3) {
             // so(tx)
-            types.Property memory stateObject = abi.decode(_inputs[5], (types.Property));
+            types.Property memory stateObject = abi.decode(_inputs[4], (types.Property));
             bytes[] memory childInputs = new bytes[](stateObject.inputs.length + 1);
             for(uint256 i = 0;i < stateObject.inputs.length;i++) {
                 childInputs[i] = stateObject.inputs[i];
             }
-            childInputs[stateObject.inputs.length] = _inputs[1];
+            childInputs[stateObject.inputs.length] = _inputs[0];
             notInputs[0] = abi.encode(types.Property({
                 predicateAddress: stateObject.predicateAddress,
                 inputs: childInputs

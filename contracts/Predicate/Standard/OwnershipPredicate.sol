@@ -12,7 +12,7 @@ import "../../DepositContract.sol";
 /**
  * Ownership(owner, tx)
  */
-contract Ownership {
+contract OwnershipPredicate {
 
     address notAddress;
     address txAddress;
@@ -60,18 +60,21 @@ contract Ownership {
      * Gets child of Ownership(owner, tx).
      */
     function getChildOwnership(bytes[] memory _inputs, bytes memory challengeInput) private returns (types.Property memory) {
-        bytes[] memory childInputs = new bytes[](6);
+        bytes[] memory childInputs = new bytes[](4);
         childInputs[0] = _inputs[1];
         childInputs[1] = _inputs[0];
         childInputs[2] = bytes("__VARIABLE__sig");
+        childInputs[3] = bytes("secp256k1");
         bytes[] memory notInputs = new bytes[](1);
         notInputs[0] = abi.encode(types.Property({
             predicateAddress: isValidSignatureAddress,
             inputs: childInputs
         }));
-        bytes[] memory forAllSuchThatInputs = new bytes[](2);
-        forAllSuchThatInputs[0] = bytes("sig");
-        forAllSuchThatInputs[1] = abi.encode(types.Property({
+        bytes[] memory forAllSuchThatInputs = new bytes[](3);
+        // forAllSuchThatInputs[0] is hint data
+        forAllSuchThatInputs[0] = bytes("");
+        forAllSuchThatInputs[1] = bytes("sig");
+        forAllSuchThatInputs[2] = abi.encode(types.Property({
             predicateAddress: notAddress,
             inputs: notInputs
         }));
