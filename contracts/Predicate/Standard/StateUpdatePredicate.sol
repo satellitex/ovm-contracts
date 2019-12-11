@@ -6,6 +6,7 @@ import "../AtomicPredicate.sol";
 import { UniversalAdjudicationContract } from "../../UniversalAdjudicationContract.sol";
 import "../../Utils.sol";
 import "../Atomic/IsContainedPredicate.sol";
+import "../CompiledPredicate.sol";
 
 /**
  * StateUpdatePredicate stands for the claim below.
@@ -18,7 +19,7 @@ import "../Atomic/IsContainedPredicate.sol";
  *   and eq(tx.3, su.3)
  *   and so()
  */
-contract StateUpdatePredicate {
+contract StateUpdatePredicate is CompiledPredicate {
     address notAddress;
     address txAddress;
     address equalAddress;
@@ -54,7 +55,7 @@ contract StateUpdatePredicate {
         bytes[] memory _inputs,
         bytes memory _challengeInput,
         types.Property memory _challenge
-    ) public returns (bool) {
+    ) public view returns (bool) {
         require(
           keccak256(abi.encode(getChild(_inputs, _challengeInput))) == keccak256(abi.encode(_challenge)),
           "_challenge must be valud child of game tree"
@@ -62,7 +63,7 @@ contract StateUpdatePredicate {
         return true;
     }
 
-    function getChild(bytes[] memory inputs, bytes memory challengeInput) private returns (types.Property memory) {
+    function getChild(bytes[] memory inputs, bytes memory challengeInput) private view returns (types.Property memory) {
         if(keccak256(inputs[0]) == keccak256((StateUpdateTA))) {
             return getChildStateUpdateTA(utils.subArray(inputs, 1, inputs.length), challengeInput);
         }
@@ -72,7 +73,7 @@ contract StateUpdatePredicate {
    /**
      * Gets child of StateUpdateT(StateUpdateT, token, range, block_number, so).
      */
-    function getChildStateUpdateT(bytes[] memory _inputs, bytes memory challengeInput) private returns (types.Property memory) {
+    function getChildStateUpdateT(bytes[] memory _inputs, bytes memory challengeInput) private view returns (types.Property memory) {
         bytes[] memory childInputs = new bytes[](6);
         childInputs[0] = StateUpdateTA;
         childInputs[1] = bytes("__VARIABLE__tx");
@@ -103,7 +104,7 @@ contract StateUpdatePredicate {
     /**
      * Gets child of StateUpdateTA(StateUpdateTA, tx, token, range, block_number, so).
      */
-    function getChildStateUpdateTA(bytes[] memory _inputs, bytes memory _challengeInput) private returns (types.Property memory) {
+    function getChildStateUpdateTA(bytes[] memory _inputs, bytes memory _challengeInput) private view returns (types.Property memory) {
         types.Property memory transaction = abi.decode(_inputs[0], (types.Property));
         uint256 challengeInput = abi.decode(_challengeInput, (uint256));
         bytes[] memory notInputs = new bytes[](1);
@@ -153,7 +154,16 @@ contract StateUpdatePredicate {
         });
     }
 
-    function decideStateUpdateTA(bytes[] memory _inputs) public view returns (bool) {
+    function decideStateUpdateT(bytes[] memory _inputs, bytes[] memory _witness) public view returns (bool) {
+        bytes[] memory childInputs = new bytes[](_inputs.length + 1);
+        childInputs[0] = _witness[0];
+        for(uint256 i = 0;i < _inputs.length;i++) {
+            childInputs[i + 1] = _inputs[i];
+        }
+        return decideStateUpdateTA(childInputs, utils.subArray(_witness, 1, _witness.length));
+    }
+
+    function decideStateUpdateTA(bytes[] memory _inputs, bytes[] memory _witness) public view returns (bool) {
         types.Property memory transaction = abi.decode(_inputs[0], (types.Property));
         types.Property memory stateObject = abi.decode(_inputs[4], (types.Property));
         bytes[] memory inputsForIsContained = new bytes[](2);
@@ -169,20 +179,17 @@ contract StateUpdatePredicate {
         require(IsContainedPredicate(isContainedPredicateAddress).decide(inputsForIsContained), "range must be included");
         require(keccak256(transaction.inputs[2]) == keccak256(_inputs[3]), "input block number must be same");
         require(
-            adjudicationContract.isDecided(types.Property({
-                predicateAddress: stateObject.predicateAddress,
-                inputs: stateObjectInputs
-            })),
+            CompiledPredicate(stateObject.predicateAddress).decide(stateObjectInputs, _witness),
             "state object must be decided"
         );
         return true;
     }
 
-    function decideTrue(bytes[] memory _inputs) public {
+    function decideTrue(bytes[] memory _inputs, bytes[] memory _witness) public {
         if(keccak256(_inputs[0]) == keccak256((StateUpdateTA))) {
-            require(decideStateUpdateTA(utils.subArray(_inputs, 1, _inputs.length)), "must decide true");
+            require(decideStateUpdateTA(utils.subArray(_inputs, 1, _inputs.length), _witness), "must decide true");
         } else {
-            require(false, "unknown label");
+            require(decideStateUpdateT(utils.subArray(_inputs, 1, _inputs.length), _witness), "must decide true");
         }
         types.Property memory property = types.Property({
             predicateAddress: address(this),

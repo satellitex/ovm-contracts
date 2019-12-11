@@ -5,6 +5,7 @@ import {
   getWallets,
   solidity
 } from 'ethereum-waffle'
+import * as MockAdjudicationContract from '../../../build/MockAdjudicationContract.json'
 import * as MockChallenge from '../../../build/MockChallenge.json'
 import * as Utils from '../../../build/Utils.json'
 import * as OwnershipPredicate from '../../../build/OwnershipPredicate.json'
@@ -13,7 +14,7 @@ import {
   encodeProperty,
   encodeString,
   randomAddress
-} from '../../helpers/getGameId'
+} from '../../helpers/utils'
 
 chai.use(solidity)
 chai.use(require('chai-as-promised'))
@@ -33,9 +34,15 @@ describe('OwnershipPredicate', () => {
 
   beforeEach(async () => {
     const utils = await deployContract(wallet, Utils, [])
+    const adjudicationContract = await deployContract(
+      wallet,
+      MockAdjudicationContract,
+      [false]
+    )
     mockChallenge = await deployContract(wallet, MockChallenge, [])
     ownershipPredicate = await deployContract(wallet, OwnershipPredicate, [
       utils.address,
+      adjudicationContract.address,
       notAddress,
       equalAddress,
       forAllSuchThatAddress,

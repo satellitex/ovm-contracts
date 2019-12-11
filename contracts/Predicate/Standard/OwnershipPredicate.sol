@@ -5,14 +5,17 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {DataTypes as types} from "../../DataTypes.sol";
 import "../AtomicPredicate.sol";
+import { UniversalAdjudicationContract } from "../../UniversalAdjudicationContract.sol";
 import "../NotPredicate.sol";
 import "../../Utils.sol";
 import "../../DepositContract.sol";
+import "../Atomic/IsValidSignaturePredicate.sol";
+import "../CompiledPredicate.sol";
 
 /**
  * Ownership(owner, tx)
  */
-contract OwnershipPredicate {
+contract OwnershipPredicate is CompiledPredicate {
 
     address notAddress;
     address txAddress;
@@ -20,9 +23,11 @@ contract OwnershipPredicate {
     address forAllSuchThatAddress;
     address isValidSignatureAddress;
     Utils utils;
+    UniversalAdjudicationContract adjudicationContract;
 
     constructor(
         address _utilsAddress,
+        address _adjudicationContractAddress,
         address _notAddress,
         address _equalAddress,
         address _forAllSuchThatAddress,
@@ -30,6 +35,7 @@ contract OwnershipPredicate {
         address _isValidSignatureAddress
     ) public {
         utils = Utils(_utilsAddress);
+        adjudicationContract = UniversalAdjudicationContract(_adjudicationContractAddress);
         notAddress = _notAddress;
         equalAddress = _equalAddress;
         forAllSuchThatAddress = _forAllSuchThatAddress;
@@ -44,7 +50,7 @@ contract OwnershipPredicate {
         bytes[] memory _inputs,
         bytes memory _challengeInput,
         types.Property memory _challenge
-    ) public returns (bool) {
+    ) public view returns (bool) {
         require(
             keccak256(abi.encode(getChild(_inputs, _challengeInput))) == keccak256(abi.encode(_challenge)),
             "_challenge must be valud child of game tree"
@@ -52,14 +58,14 @@ contract OwnershipPredicate {
         return true;
     }
 
-    function getChild(bytes[] memory inputs, bytes memory challengeInput) private returns (types.Property memory) {
+    function getChild(bytes[] memory inputs, bytes memory challengeInput) private view returns (types.Property memory) {
         return getChildOwnership(inputs, challengeInput);
     }
 
     /**
      * Gets child of Ownership(owner, tx).
      */
-    function getChildOwnership(bytes[] memory _inputs, bytes memory challengeInput) private returns (types.Property memory) {
+    function getChildOwnership(bytes[] memory _inputs, bytes memory challengeInput) private view returns (types.Property memory) {
         bytes[] memory childInputs = new bytes[](4);
         childInputs[0] = _inputs[1];
         childInputs[1] = _inputs[0];
@@ -100,5 +106,26 @@ contract OwnershipPredicate {
         uint256 amount = exit.subrange.end - exit.subrange.start;
         require(msg.sender == owner, "msg.sender must be owner");
         depositContract.erc20().transfer(_owner, amount);
+    }
+
+    /**
+     * inputs are StateUpdate which has ownership state object
+     */
+    function decide(bytes[] memory _inputs, bytes[] memory _witness) public view returns (bool) {
+        bytes[] memory childInputs = new bytes[](4);
+        childInputs[0] = _inputs[1];
+        childInputs[1] = _inputs[0];
+        childInputs[2] = _witness[0];
+        childInputs[3] = bytes("secp256k1");
+        return IsValidSignaturePredicate(isValidSignatureAddress).decide(childInputs);
+    }
+
+    function decideTrue(bytes[] memory _inputs, bytes[] memory _witness) public {
+        require(decide(_inputs, _witness), "must decide true");
+        types.Property memory property = types.Property({
+            predicateAddress: address(this),
+            inputs: _inputs
+        });
+        adjudicationContract.setPredicateDecision(utils.getPropertyId(property), true);
     }
 }

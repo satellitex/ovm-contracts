@@ -15,7 +15,7 @@ import {
   encodeProperty,
   encodeString,
   randomAddress
-} from '../../helpers/getGameId'
+} from '../../helpers/utils'
 const abi = new ethers.utils.AbiCoder()
 
 chai.use(solidity)
