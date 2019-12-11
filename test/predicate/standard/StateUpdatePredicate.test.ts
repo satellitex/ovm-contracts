@@ -7,6 +7,7 @@ import {
 } from 'ethereum-waffle'
 import * as MockAdjudicationContract from '../../../build/MockAdjudicationContract.json'
 import * as MockChallenge from '../../../build/MockChallenge.json'
+import * as MockOwnershipPredicate from '../../../build/MockOwnershipPredicate.json'
 import * as Utils from '../../../build/Utils.json'
 import * as StateUpdatePredicate from '../../../build/StateUpdatePredicate.json'
 import * as IsContainedPredicate from '../../../build/IsContainedPredicate.json'
@@ -29,26 +30,33 @@ describe('StateUpdatePredicate', () => {
   let stateUpdatePredicate: ethers.Contract
   let mockChallenge: ethers.Contract
   let isContainedPredicate: ethers.Contract
+  let mockOwnershipPredicate: ethers.Contract
   const notAddress = randomAddress()
   const equalAddress = randomAddress()
   const forAllSuchThatAddress = randomAddress()
   const txAddress = randomAddress()
-  const ownershipAddress = randomAddress()
   const token = randomAddress()
   const range = abi.encode(['tuple(uint256, uint256)'], [[100, 200]])
   const blockNumber = '0x00001200'
-  const stateObject = encodeProperty({
-    predicateAddress: ownershipAddress,
-    inputs: [wallet.address]
-  })
-  const transaction = encodeProperty({
-    predicateAddress: txAddress,
-    inputs: [token, range, blockNumber, stateObject]
-  })
+  let stateObject: any
+  let transaction: any
 
   beforeEach(async () => {
     const utils = await deployContract(wallet, Utils, [])
     mockChallenge = await deployContract(wallet, MockChallenge, [])
+    mockOwnershipPredicate = await deployContract(
+      wallet,
+      MockOwnershipPredicate,
+      [randomAddress()]
+    )
+    stateObject = encodeProperty({
+      predicateAddress: mockOwnershipPredicate.address,
+      inputs: [wallet.address]
+    })
+    transaction = encodeProperty({
+      predicateAddress: txAddress,
+      inputs: [token, range, blockNumber, stateObject]
+    })
     const adjudicationContract = await deployContract(
       wallet,
       MockAdjudicationContract,
@@ -158,7 +166,7 @@ describe('StateUpdatePredicate', () => {
         predicateAddress: notAddress,
         inputs: [
           encodeProperty({
-            predicateAddress: ownershipAddress,
+            predicateAddress: mockOwnershipPredicate.address,
             inputs: [wallet.address, transaction]
           })
         ]
@@ -200,7 +208,17 @@ describe('StateUpdatePredicate', () => {
   })
 
   describe('decideTrue', () => {
-    it('suceed to decide', async () => {
+    it('suceed to prove that StateUpdateT is true', async () => {
+      const stateUpdateProperty = {
+        predicateAddress: stateUpdatePredicate.address,
+        inputs: [token, range, blockNumber, stateObject]
+      }
+      await stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs, [
+        transaction
+      ])
+    })
+
+    it('suceed to prove that StateUpdateTA is true', async () => {
       const stateUpdateProperty = {
         predicateAddress: stateUpdatePredicate.address,
         inputs: [
@@ -212,25 +230,7 @@ describe('StateUpdatePredicate', () => {
           stateObject
         ]
       }
-      await stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs)
-    })
-
-    it('fail to decide with invalid label', async () => {
-      const invalidRange = abi.encode(['tuple(uint256, uint256)'], [[150, 250]])
-      const stateUpdateProperty = {
-        predicateAddress: stateUpdatePredicate.address,
-        inputs: [
-          encodeString('StateUpdateT'),
-          transaction,
-          token,
-          invalidRange,
-          blockNumber,
-          stateObject
-        ]
-      }
-      await expect(
-        stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs)
-      ).to.be.revertedWith('unknown label')
+      await stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs, [])
     })
 
     it('fail to decide with invalid range', async () => {
@@ -247,7 +247,7 @@ describe('StateUpdatePredicate', () => {
         ]
       }
       await expect(
-        stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs)
+        stateUpdatePredicate.decideTrue(stateUpdateProperty.inputs, [])
       ).to.be.revertedWith('range must contain subrange')
     })
   })

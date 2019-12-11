@@ -185,17 +185,24 @@ contract StateUpdatePredicate is CompiledPredicate {
         return true;
     }
 
-    function decideTrue(bytes[] memory _inputs, bytes[] memory _witness) public {
+    function decide(bytes[] memory _inputs, bytes[] memory _witness) public view returns(bool) {
         if(keccak256(_inputs[0]) == keccak256((StateUpdateTA))) {
-            require(decideStateUpdateTA(utils.subArray(_inputs, 1, _inputs.length), _witness), "must decide true");
+            require(decideStateUpdateTA(utils.subArray(_inputs, 1, _inputs.length), _witness), "must be true");
+        } else if(keccak256(_inputs[0]) == keccak256((StateUpdateT))) {
+            require(decideStateUpdateT(utils.subArray(_inputs, 1, _inputs.length), _witness), "must be true");
         } else {
-            require(decideStateUpdateT(utils.subArray(_inputs, 1, _inputs.length), _witness), "must decide true");
+            require(decideStateUpdateT(_inputs, _witness), "must be true");
+
         }
+        return true;
+    }
+
+    function decideTrue(bytes[] memory _inputs, bytes[] memory _witness) public {
+        require(decide(_inputs, _witness), "must be true");
         types.Property memory property = types.Property({
             predicateAddress: address(this),
             inputs: _inputs
         });
         adjudicationContract.setPredicateDecision(utils.getPropertyId(property), true);
     }
-
 }

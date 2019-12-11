@@ -7,6 +7,7 @@ import {
 } from 'ethereum-waffle'
 import * as MockAdjudicationContract from '../../../build/MockAdjudicationContract.json'
 import * as MockChallenge from '../../../build/MockChallenge.json'
+import * as MockAtomicPredicate from '../../../build/MockAtomicPredicate.json'
 import * as Utils from '../../../build/Utils.json'
 import * as OwnershipPredicate from '../../../build/OwnershipPredicate.json'
 import * as ethers from 'ethers'
@@ -30,7 +31,7 @@ describe('OwnershipPredicate', () => {
   const equalAddress = randomAddress()
   const forAllSuchThatAddress = randomAddress()
   const txAddress = randomAddress()
-  const isValidSignatureAddress = randomAddress()
+  let isValidSignatureAddress: string
 
   beforeEach(async () => {
     const utils = await deployContract(wallet, Utils, [])
@@ -39,6 +40,12 @@ describe('OwnershipPredicate', () => {
       MockAdjudicationContract,
       [false]
     )
+    const mockAtomicPredicate = await deployContract(
+      wallet,
+      MockAtomicPredicate,
+      []
+    )
+    isValidSignatureAddress = mockAtomicPredicate.address
     mockChallenge = await deployContract(wallet, MockChallenge, [])
     ownershipPredicate = await deployContract(wallet, OwnershipPredicate, [
       utils.address,
@@ -122,6 +129,27 @@ describe('OwnershipPredicate', () => {
           forAllSuchThatProperty
         )
       ).to.be.revertedWith('_challenge must be valud child of game tree')
+    })
+  })
+
+  describe('decide', () => {
+    const transaction = '0x001234567890'
+    const signature = '0x001234567890'
+    it('return true', async () => {
+      const result = await ownershipPredicate.decide(
+        [wallet.address, transaction],
+        [signature]
+      )
+      assert.isTrue(result)
+    })
+
+    it('throw exception with invalid signature', async () => {
+      await expect(
+        ownershipPredicate.decide(
+          [wallet.address, encodeString('fail')],
+          [signature]
+        )
+      ).to.be.revertedWith('signature must be valid')
     })
   })
 })

@@ -117,7 +117,8 @@ contract OwnershipPredicate is CompiledPredicate {
         childInputs[1] = _inputs[0];
         childInputs[2] = _witness[0];
         childInputs[3] = bytes("secp256k1");
-        return IsValidSignaturePredicate(isValidSignatureAddress).decide(childInputs);
+        require(IsValidSignaturePredicate(isValidSignatureAddress).decide(childInputs), "signature must be valid");
+        return true;
     }
 
     function decideTrue(bytes[] memory _inputs, bytes[] memory _witness) public {
