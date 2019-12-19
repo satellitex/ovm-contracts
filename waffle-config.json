@@ -1,5 +1,6 @@
 {
   "sourcesPath": "./contracts",
   "targetPath": "./build/contracts",
-  "npmPath": "./node_modules"
+  "npmPath": "./node_modules",
+  "solcVersion": "v0.5.15+commit.6a57276f"
 }
