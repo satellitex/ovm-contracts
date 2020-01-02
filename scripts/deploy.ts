@@ -92,6 +92,10 @@ const deployContracts = async (wallet: ethers.Wallet): Promise<void> => {
     mockStateUpdate.address
   )
   console.log('DepositContract Deployed')
+
+  console.log('mint mock token')
+  await mockToken.mint('0xC5fdf4076b8F3A5357c5E395ab970B5B54098Fef', 1000)
+  console.log('mint mock token finished')
 }
 
 const deploy = async (): Promise<void> => {
