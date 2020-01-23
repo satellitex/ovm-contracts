@@ -31,7 +31,7 @@
     "ethers": "^4.0.33",
     "husky": "^3.1.0",
     "mocha": "^6.2.0",
-    "@cryptoeconomicslab/ovm-compiler": "^0.2.3",
+    "@cryptoeconomicslab/ovm-ethereum-generator": "^0.2.4",
     "prettier": "^1.19.1",
     "prettier-plugin-solidity": "^1.0.0-alpha.34",
     "ts-node": "^8.5.0",

@@ -1,4 +1,4 @@
-import { generateEVMByteCode } from '@cryptoeconomicslab/ovm-compiler'
+import { generateEVMByteCode } from '@cryptoeconomicslab/ovm-ethereum-generator'
 import fs from 'fs'
 import path from 'path'
 
