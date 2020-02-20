@@ -25,6 +25,8 @@ contract DepositContract {
 
     event ExitFinalized(bytes32 exitId);
 
+    event AddrComp(address expected, address actual);
+
     /* Public Variables and Mappings*/
     ERC20 public erc20;
     CommitmentContract public commitmentContract;
@@ -207,10 +209,12 @@ contract DepositContract {
             exit.stateUpdate.depositContractAddress == address(this),
             "StateUpdate.depositContractAddress must be this contract address"
         );
+
         // Remove the deposited range
-        removeDepositedRange(exit.subrange, _depositedRangeId);
+        removeDepositedRange(exit.stateUpdate.range, _depositedRangeId);
         //Transfer tokens to its predicate
-        uint256 amount = exit.subrange.end - exit.subrange.start;
+        uint256 amount = exit.stateUpdate.range.end -
+            exit.stateUpdate.range.start;
         erc20.transfer(payout, amount);
         emit ExitFinalized(exitId);
         return exit;
