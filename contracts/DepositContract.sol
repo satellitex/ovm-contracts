@@ -25,8 +25,6 @@ contract DepositContract {
 
     event ExitFinalized(bytes32 exitId);
 
-    event AddrComp(address expected, address actual);
-
     /* Public Variables and Mappings*/
     ERC20 public erc20;
     CommitmentContract public commitmentContract;

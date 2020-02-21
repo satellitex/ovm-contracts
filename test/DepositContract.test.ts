@@ -204,17 +204,53 @@ describe('DepositContract', () => {
       return {
         predicateAddress: testPredicate.address,
         inputs: [
-          abi.encode(['tuple(uint256, uint256)'], [range]),
           abi.encode(
             ['tuple(address, bytes[])'],
             [
               [
                 stateUpdateAddress,
                 [
-                  depositContractAddress || depositContract.address,
-                  abi.encode(['tuple(uint256, uint256)'], [[0, 10]]),
-                  abi.encode(['uint256'], [0]),
+                  encodeAddress(
+                    depositContractAddress || depositContract.address
+                  ),
+                  abi.encode(['tuple(uint256, uint256)'], [range]),
+                  encodeInteger(0),
                   ownershipStateObject
+                ]
+              ]
+            ]
+          ),
+          abi.encode(
+            // address tree
+            [
+              'tuple(tuple(address, uint256, tuple(bytes32, address)[]), tuple(uint256, uint256, tuple(bytes32, uint256)[]))'
+            ],
+            [
+              [
+                [
+                  depositContractAddress || depositContract.address,
+                  0,
+                  [
+                    [
+                      '0xdd779be20b84ced84b7cbbdc8dc98d901ecd198642313d35d32775d75d916d3a',
+                      '0x0000000000000000000000000000000000000001'
+                    ]
+                  ]
+                ],
+                // interval tree
+                [
+                  0,
+                  0,
+                  [
+                    [
+                      '0x036491cc10808eeb0ff717314df6f19ba2e232d04d5f039f6fa382cae41641da',
+                      7
+                    ],
+                    [
+                      '0xef583c07cae62e3a002a9ad558064ae80db17162801132f9327e8bb6da16ea8a',
+                      5000
+                    ]
+                  ]
                 ]
               ]
             ]

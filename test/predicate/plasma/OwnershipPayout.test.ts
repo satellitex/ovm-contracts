@@ -27,6 +27,8 @@ chai.use(solidity)
 chai.use(require('chai-as-promised'))
 const { expect } = chai
 
+const abi = new ethers.utils.AbiCoder()
+
 describe('OwnershipPayout', () => {
   let provider = createMockProvider()
   let wallets = getWallets(provider)
@@ -71,16 +73,50 @@ describe('OwnershipPayout', () => {
       return {
         predicateAddress: exitPredicateAddress,
         inputs: [
-          encodeRange(0, 100),
           encodeProperty({
             predicateAddress: stateUpdateAddress,
             inputs: [
-              ethers.constants.AddressZero,
+              encodeAddress(ethers.constants.AddressZero),
               encodeRange(0, 100),
               encodeInteger(0),
               encodeProperty(stateObject)
             ]
-          })
+          }),
+          abi.encode(
+            // address tree
+            [
+              'tuple(tuple(address, uint256, tuple(bytes32, address)[]), tuple(uint256, uint256, tuple(bytes32, uint256)[]))'
+            ],
+            [
+              [
+                [
+                  mockDepositContract.address,
+                  0,
+                  [
+                    [
+                      '0xdd779be20b84ced84b7cbbdc8dc98d901ecd198642313d35d32775d75d916d3a',
+                      '0x0000000000000000000000000000000000000001'
+                    ]
+                  ]
+                ],
+                // interval tree
+                [
+                  0,
+                  0,
+                  [
+                    [
+                      '0x036491cc10808eeb0ff717314df6f19ba2e232d04d5f039f6fa382cae41641da',
+                      7
+                    ],
+                    [
+                      '0xef583c07cae62e3a002a9ad558064ae80db17162801132f9327e8bb6da16ea8a',
+                      5000
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          )
         ]
       }
     }
