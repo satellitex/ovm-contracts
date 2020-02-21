@@ -35,7 +35,7 @@ library Deserializer {
         pure
         returns (types.StateUpdate memory)
     {
-        address depositAddress = bytesToAddress(_stateUpdate.inputs[0]);
+        address depositAddress = abi.decode(_stateUpdate.inputs[0], (address));
         types.Range memory range = abi.decode(
             _stateUpdate.inputs[1],
             (types.Range)
