@@ -32,8 +32,8 @@ library DataTypes {
         Property stateUpdate;
     }
     struct Exit {
-        Range subrange;
         StateUpdate stateUpdate;
+        InclusionProof inclusionProof;
     }
 
     struct InclusionProof {

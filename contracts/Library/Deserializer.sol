@@ -12,15 +12,18 @@ library Deserializer {
         pure
         returns (types.Exit memory)
     {
-        types.Range memory range = abi.decode(_exit.inputs[0], (types.Range));
         types.Property memory stateUpdateProperty = abi.decode(
-            _exit.inputs[1],
+            _exit.inputs[0],
             (types.Property)
+        );
+        types.InclusionProof memory inclusionProof = abi.decode(
+            _exit.inputs[1],
+            (types.InclusionProof)
         );
         return
             types.Exit({
                 stateUpdate: deserializeStateUpdate(stateUpdateProperty),
-                subrange: range
+                inclusionProof: inclusionProof
             });
     }
 
@@ -32,7 +35,7 @@ library Deserializer {
         pure
         returns (types.StateUpdate memory)
     {
-        address depositAddress = bytesToAddress(_stateUpdate.inputs[0]);
+        address depositAddress = abi.decode(_stateUpdate.inputs[0], (address));
         types.Range memory range = abi.decode(
             _stateUpdate.inputs[1],
             (types.Range)
@@ -57,7 +60,7 @@ library Deserializer {
         returns (address addr)
     {
         assembly {
-            addr := mload(add(addressBytes, 20))
+            addr := mload(add(addressBytes, 0x20))
         }
     }
 }
