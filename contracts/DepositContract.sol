@@ -32,7 +32,9 @@ contract DepositContract {
     // Fixme: when StateUpdatePredicate is merged
     address public stateUpdatePredicateContract;
 
+    // totalDeposited is the most right coin id which has been deposited
     uint256 public totalDeposited;
+    // depositedRanges are currently deposited ranges
     mapping(uint256 => types.Range) public depositedRanges;
     mapping(bytes32 => types.Checkpoint) public checkpoints;
 
