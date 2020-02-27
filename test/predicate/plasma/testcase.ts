@@ -10,7 +10,7 @@ interface ChallengeTestCase {
   ) => void
   getChallenge: (
     ownershipPredicate: ethers.Contract,
-    [isValidSignatureAddress]: string[],
+    mockAtomicPredicateAddress: string,
     compiledPredicate: ethers.Contract
   ) => void
 }

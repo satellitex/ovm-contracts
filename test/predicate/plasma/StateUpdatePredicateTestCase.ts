@@ -46,7 +46,7 @@ export const createStateUpdateTestCase = (
         },
         getChallenge: (
           stateUpdatePredicate: ethers.Contract,
-          [isValidSignatureAddress]: string[],
+          mockAtomicPredicateAddress: string,
           compiledPredicate: ethers.Contract
         ) => {
           return {
@@ -101,7 +101,7 @@ export const createStateUpdateTestCase = (
         },
         getChallenge: (
           stateUpdatePredicate: ethers.Contract,
-          [isValidSignatureAddress]: string[],
+          mockAtomicPredicateAddress: string,
           compiledPredicate: ethers.Contract
         ) => {
           return {

@@ -25,22 +25,15 @@ describe('predicates', () => {
   let mockChallenge: ethers.Contract
   const notAddress = randomAddress()
   const andAddress = randomAddress()
-  const equalAddress = randomAddress()
   const forAllSuchThatAddress = randomAddress()
-  const isContainedAddress = randomAddress()
-  const verifyInclusionAddress = randomAddress()
-  const isLessThanAddress = randomAddress()
-  const isSameAmountAddress = randomAddress()
   const ownershipPayout = randomAddress()
-  let isValidSignatureAddress: string
-  let atomicPredicateAddresses: string[]
+  let mockAtomicPredicateAddress: string
   let mockAtomicPredicate: ethers.Contract
   let mockCompiledPredicate: ethers.Contract
 
   beforeEach(async () => {
     mockAtomicPredicate = await deployContract(wallet, MockAtomicPredicate, [])
-    isValidSignatureAddress = mockAtomicPredicate.address
-    atomicPredicateAddresses = [isValidSignatureAddress]
+    mockAtomicPredicateAddress = mockAtomicPredicate.address
     mockChallenge = await deployContract(wallet, MockChallenge, [])
     mockCompiledPredicate = await deployContract(
       wallet,
@@ -99,7 +92,7 @@ describe('predicates', () => {
               [challengeInput],
               validChallenge.getChallenge(
                 targetPredicate,
-                atomicPredicateAddresses,
+                mockAtomicPredicateAddress,
                 mockCompiledPredicate
               )
             )
@@ -119,7 +112,7 @@ describe('predicates', () => {
                 [challengeInput],
                 invalidChallenge.getChallenge(
                   targetPredicate,
-                  atomicPredicateAddresses,
+                  mockAtomicPredicateAddress,
                   mockCompiledPredicate
                 )
               )

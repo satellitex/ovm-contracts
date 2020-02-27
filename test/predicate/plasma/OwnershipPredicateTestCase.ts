@@ -33,7 +33,7 @@ export const createOwnershipTestCase = (
         },
         getChallenge: (
           ownershipPredicate: ethers.Contract,
-          [isValidSignatureAddress]: string[],
+          mockAtomicPredicateAddress: string,
           compiledPredicate: ethers.Contract
         ) => {
           return {
@@ -45,7 +45,7 @@ export const createOwnershipTestCase = (
                 predicateAddress: notAddress,
                 inputs: [
                   encodeProperty({
-                    predicateAddress: isValidSignatureAddress,
+                    predicateAddress: mockAtomicPredicateAddress,
                     inputs: [
                       transaction,
                       encodeVariable('v0'),
