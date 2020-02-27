@@ -106,6 +106,26 @@ describe('predicates', () => {
             assert.isTrue(result)
           })
         })
+
+        testcase.invalidChallenges.forEach(invalidChallenge => {
+          it(invalidChallenge.name, async () => {
+            const challengeInput = '0x'
+            await expect(
+              mockChallenge.isValidChallenge(
+                invalidChallenge.getProperty(
+                  targetPredicate,
+                  mockCompiledPredicate
+                ),
+                [challengeInput],
+                invalidChallenge.getChallenge(
+                  targetPredicate,
+                  atomicPredicateAddresses,
+                  mockCompiledPredicate
+                )
+              )
+            ).to.be.reverted
+          })
+        })
       })
 
       describe('decide', () => {
@@ -119,6 +139,17 @@ describe('predicates', () => {
               parameters.witnesses
             )
             assert.isTrue(result)
+          })
+        })
+
+        testcase.invalidDecideTestCases.forEach(decideTrueTestCase => {
+          it(decideTrueTestCase.name, async () => {
+            const parameters = decideTrueTestCase.createParameters(
+              mockCompiledPredicate
+            )
+            await expect(
+              targetPredicate.decide(parameters.inputs, parameters.witnesses)
+            ).to.be.reverted
           })
         })
       })
