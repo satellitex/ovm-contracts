@@ -23,7 +23,10 @@ import {
   encodeRange,
   encodeInteger
 } from './helpers/utils'
-import { getTransactionEvent } from './helpers/getTransactionEvent'
+import {
+  getTransactionEvent,
+  getTransactionEvents
+} from './helpers/getTransactionEvent'
 const abi = new ethers.utils.AbiCoder()
 const { MaxUint256 } = ethers.constants
 
@@ -102,12 +105,19 @@ describe('DepositContract', () => {
     it('succeed to deposit 1 MockToken', async () => {
       await mockTokenContract.approve(depositContract.address, 10)
       const tx = await depositContract.deposit(1, stateObject)
-      const event = await getTransactionEvent(provider, tx, depositContract)
+      const events = await getTransactionEvents(provider, tx, depositContract)
+      const depositedRangeExtended = events[0]
+      assert.deepEqual(depositedRangeExtended.values.newRange, [
+        ethers.utils.bigNumberify(0),
+        ethers.utils.bigNumberify(1)
+      ])
+
+      const checkpointFinalized = events[1]
       assert.equal(
-        event.values.checkpointId,
+        checkpointFinalized.values.checkpointId,
         '0xf9f1a95730077ac5d890fe8614d4144030e357990707d6acde2d7b1d3954faf6'
       )
-      assert.deepEqual(event.values.checkpoint, [
+      assert.deepEqual(checkpointFinalized.values.checkpoint, [
         [ethers.utils.bigNumberify(0), ethers.utils.bigNumberify(1)],
         [
           mockStateUpdatePredicateContract.address,
@@ -119,9 +129,17 @@ describe('DepositContract', () => {
           ]
         ]
       ])
+
       const tx2 = await depositContract.deposit(2, stateObject)
-      const event2 = await getTransactionEvent(provider, tx2, depositContract)
-      assert.deepEqual(event2.values.checkpoint, [
+      const events2 = await getTransactionEvents(provider, tx2, depositContract)
+      const depositedRangeExtended2 = events2[0]
+      assert.deepEqual(depositedRangeExtended2.values.newRange, [
+        ethers.utils.bigNumberify(0),
+        ethers.utils.bigNumberify(3)
+      ])
+
+      const checkpointFinalized2 = events2[1]
+      assert.deepEqual(checkpointFinalized2.values.checkpoint, [
         [ethers.utils.bigNumberify(1), ethers.utils.bigNumberify(3)],
         [
           mockStateUpdatePredicateContract.address,
@@ -289,12 +307,26 @@ describe('DepositContract', () => {
       }
       await mockTokenContract.approve(depositContract.address, 10)
       await depositContract.deposit(10, stateObject)
-      // Start test
-      await expect(
-        mockOwnershipPredicate.finalizeExit(exitPropertyCreator([0, 5]), 10, {
+
+      // start test
+      const tx = mockOwnershipPredicate.finalizeExit(
+        exitPropertyCreator([0, 5]),
+        10,
+        {
           gasLimit: 1000000
-        })
-      ).to.emit(depositContract, 'ExitFinalized')
+        }
+      )
+      await expect(tx).to.emit(depositContract, 'ExitFinalized')
+      const events = await getTransactionEvents(
+        provider,
+        await tx,
+        depositContract
+      )
+      const depositedRangeRemoved = events[0]
+      assert.deepEqual(depositedRangeRemoved.values.removedRange, [
+        ethers.utils.bigNumberify(0),
+        ethers.utils.bigNumberify(5)
+      ])
     })
     it('succeed to finalize exit and depositedId is changed', async () => {
       const stateObject = {
@@ -304,16 +336,44 @@ describe('DepositContract', () => {
       await mockTokenContract.approve(depositContract.address, 10)
       await depositContract.deposit(10, stateObject)
       // Start test
-      await expect(
-        mockOwnershipPredicate.finalizeExit(exitPropertyCreator([5, 10]), 10, {
+
+      const tx = mockOwnershipPredicate.finalizeExit(
+        exitPropertyCreator([5, 10]),
+        10,
+        {
           gasLimit: 1000000
-        })
-      ).to.emit(depositContract, 'ExitFinalized')
-      await expect(
-        mockOwnershipPredicate.finalizeExit(exitPropertyCreator([0, 5]), 5, {
+        }
+      )
+      await expect(tx).to.emit(depositContract, 'ExitFinalized')
+      const events = await getTransactionEvents(
+        provider,
+        await tx,
+        depositContract
+      )
+      const depositedRangeRemoved = events[0]
+      assert.deepEqual(depositedRangeRemoved.values.removedRange, [
+        ethers.utils.bigNumberify(5),
+        ethers.utils.bigNumberify(10)
+      ])
+
+      const tx2 = mockOwnershipPredicate.finalizeExit(
+        exitPropertyCreator([0, 5]),
+        5,
+        {
           gasLimit: 1000000
-        })
-      ).to.emit(depositContract, 'ExitFinalized')
+        }
+      )
+      await expect(tx2).to.emit(depositContract, 'ExitFinalized')
+      const events2 = await getTransactionEvents(
+        provider,
+        await tx2,
+        depositContract
+      )
+      const depositedRangeRemoved2 = events2[0]
+      assert.deepEqual(depositedRangeRemoved2.values.removedRange, [
+        ethers.utils.bigNumberify(0),
+        ethers.utils.bigNumberify(5)
+      ])
     })
     it('fail to finalize exit because it is not called from ownership predicate', async () => {
       const stateObject = {
