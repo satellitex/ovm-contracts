@@ -25,6 +25,9 @@ contract DepositContract {
 
     event ExitFinalized(bytes32 exitId);
 
+    event DepositedRangeExtended(types.Range newRange);
+    event DepositedRangeRemoved(types.Range removedRange);
+
     /* Public Variables and Mappings*/
     ERC20 public erc20;
     CommitmentContract public commitmentContract;
@@ -107,6 +110,9 @@ contract DepositContract {
         uint256 newEnd = totalDeposited.add(_amount);
         depositedRanges[newEnd] = types.Range({start: newStart, end: newEnd});
         totalDeposited = totalDeposited.add(_amount);
+        emit DepositedRangeExtended(
+            types.Range({start: newStart, end: newEnd})
+        );
     }
 
     function removeDepositedRange(
@@ -142,6 +148,8 @@ contract DepositContract {
         } else {
             encompasingRange.start = _range.end;
         }
+
+        emit DepositedRangeRemoved(_range);
     }
 
     /**
