@@ -1,18 +1,19 @@
 import { ethers } from 'ethers'
 import { createOwnershipTestCase } from './OwnershipPredicateTestCase'
 import { createStateUpdateTestCase } from './StateUpdatePredicateTestCase'
+import { OvmProperty } from '../../helpers/utils'
 
 interface ChallengeTestCase {
   name: string
   getProperty: (
     ownershipPredicate: ethers.Contract,
     compiledPredicate: ethers.Contract
-  ) => void
+  ) => OvmProperty
   getChallenge: (
     ownershipPredicate: ethers.Contract,
     mockAtomicPredicateAddress: string,
     compiledPredicate: ethers.Contract
-  ) => void
+  ) => OvmProperty
 }
 
 interface DecideTestCase {
