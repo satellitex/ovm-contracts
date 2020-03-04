@@ -20,7 +20,6 @@ import * as OrPredicate from '../build/contracts/OrPredicate.json'
 import * as ThereExistsSuchThatQuantifier from '../build/contracts/ThereExistsSuchThatQuantifier.json'
 import * as IsValidSignaturePredicate from '../build/contracts/IsValidSignaturePredicate.json'
 import * as IsContainedPredicate from '../build/contracts/IsContainedPredicate.json'
-import * as MockTxPredicate from '../build/contracts/MockCompiledPredicate.json'
 import * as OwnershipPayout from '../build/contracts/OwnershipPayout.json'
 import { randomAddress, encodeString } from '../test/helpers/utils'
 import { compileJSON } from './compileProperties'
@@ -31,6 +30,7 @@ import {
   CompiledPredicate,
   InitilizationConfig
 } from './InitializationConfig.js'
+const txAddress = ethers.constants.AddressZero
 
 if (
   !process.argv.length ||
@@ -254,11 +254,9 @@ const deployCompiledPredicates = async (
 ): Promise<{ [key: string]: CompiledPredicate }> => {
   const deployedPredicateTable: { [key: string]: CompiledPredicate } = {}
 
-  const txPredicateContract = await deployContract(MockTxPredicate, wallet)
-
   const stateUpdatePredicate = await deployOneCompiledPredicate(
     'StateUpdatePredicate',
-    [txPredicateContract.address],
+    [txAddress],
     wallet,
     uacAddress,
     utilsAddress,
@@ -394,7 +392,8 @@ const deployContracts = async (
     atomicPredicateAddressTable: atomicPredicates,
     deployedPredicateTable: deployedPredicateTable,
     constantVariableTable: {
-      secp256k1: encodeString('secp256k1')
+      secp256k1: encodeString('secp256k1'),
+      txAddress: txAddress
     },
     commitmentContract: commitmentContract.address,
     adjudicationContract: adjudicationContract.address,
