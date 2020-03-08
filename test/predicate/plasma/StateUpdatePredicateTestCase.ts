@@ -25,7 +25,8 @@ export const createStateUpdateTestCase = (
     extraArgs: [txAddress],
     validChallenges: [
       {
-        name: 'StateUpdateT',
+        name:
+          'Valid challenge of StateUpdateT(token, range, b, so) is Bytes().all(tx -> !StateUpdateTA(tx, token, range, b, so))',
         getProperty: (
           stateUpdatePredicate: ethers.Contract,
           compiledPredicate: ethers.Contract
@@ -80,7 +81,7 @@ export const createStateUpdateTestCase = (
     ],
     invalidChallenges: [
       {
-        name: 'invalid StateUpdateT',
+        name: 'Invalid challenge of StateUpdateT(token, range, b, so)',
         getProperty: (
           stateUpdatePredicate: ethers.Contract,
           compiledPredicate: ethers.Contract
@@ -135,7 +136,7 @@ export const createStateUpdateTestCase = (
     ],
     decideTrueTestCases: [
       {
-        name: 'StateUpdateT',
+        name: 'StateUpdateT(token, range, b, so) should be true',
         createParameters: (compiledPredicate: ethers.Contract) => {
           const stateObject = encodeProperty({
             predicateAddress: compiledPredicate.address,

@@ -21,7 +21,8 @@ export const createOwnershipTestCase = (
     extraArgs: [encodeString('secp256k1')],
     validChallenges: [
       {
-        name: 'OwnershipT',
+        name:
+          'Valid challenge of OwnershipT(owner, tx) is Bytes().all(v0 -> !IsValidSignature(tx, v0, owner, secp256k1))',
         getProperty: (
           ownershipPredicate: ethers.Contract,
           compiledPredicate: ethers.Contract
@@ -63,7 +64,7 @@ export const createOwnershipTestCase = (
     invalidChallenges: [],
     decideTrueTestCases: [
       {
-        name: 'OwnershipT',
+        name: 'OwnershipT(owner, tx) should be true',
         createParameters: (compiledPredicate: ethers.Contract) => {
           return {
             inputs: [encodeLabel('OwnershipT'), wallet.address, transaction],
@@ -74,7 +75,7 @@ export const createOwnershipTestCase = (
     ],
     invalidDecideTestCases: [
       {
-        name: 'invalid OwnershipT',
+        name: 'OwnershipT(owner) throw exception',
         createParameters: (compiledPredicate: ethers.Contract) => {
           return {
             inputs: [encodeLabel('OwnershipT'), wallet.address],
